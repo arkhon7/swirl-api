@@ -1,9 +1,0 @@
-for dev-dependencies:
-    poetry shell
-    poetry add --dev mypy
-    poetry add --dev black
-    poetry add --dev flake8
-
-for dependencies:
-    poetry add simpleeval
-    poetry add dacite
