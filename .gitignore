@@ -1,0 +1,10 @@
+# cache
+__pycache__
+poetry_cache
+.mypy_cache
+.vscode
+
+# dev
+project_files
+tests
+.venv
