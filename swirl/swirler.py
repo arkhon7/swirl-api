@@ -10,8 +10,6 @@ import re
 import json
 import time
 import dill as pickle
-import argparse
-
 import logging
 
 from typing import Any, Callable, Optional, List, Dict
@@ -768,53 +766,20 @@ def load_package_data(data: Dict) -> Package:
 # API METHODS
 
 
-# def execute_swirl():
-#     args = sys.argv
-#     expr = args[1]
-#     env_path = args[2]
-#     cache_path = args[3]
-#     env = get_env_data(pickle_path=cache_path, pickle_env=env_path)
-#     result = simple_eval(expr, functions=env)
-#     sys.stdout.write(str(result))
-
-
 def start():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--rmpickle",
-        help="removes the pickle file cache to ready for update",
-        required=False,
-        default=None,
-    )
+    args = sys.argv
+    expr = args[1]
+    env_path = args[2]
+    cache_path = args[3]
+    env = get_env_data(pickle_path=cache_path, pickle_env=env_path)
+    result = simple_eval(expr, functions=env)
+    sys.stdout.write(str(result))
 
-    # creation commands
-    create_package_group = parser.add_argument_group("--create-package")
-    create_package_group.add_argument("name", help="name of the package")
-    create_package_group.add_argument("owner_id", help="id of the owner")
-    create_package_group.add_argument("--desc", help="brief description")
 
-    create_macro_group = parser.add_argument_group("--create-macro")
-    create_macro_group.add_argument("name", help="name of macro")
-    create_macro_group.add_argument("owner_id", help="id of the owner")
-    create_macro_group.add_argument("--desc", help="brief description")
-    create_macro_group.add_argument("--vars", help="variables to be used")
-    create_macro_group.add_argument("formula", help="formula of the macro")
-
-    ## calculation
-    swirl_group = parser.add_argument_group("--swirl")
-
-    swirl_group.add_argument(
-        "cachepath",
-        help="specify caching path of environment",
-        # default="swirl/cache",
-    )
-
-    swirl_group.add_argument(
-        "envpath",
-        help="specify path to environment",
-        # default="swirl/env"
-    )
-    parser.parse_args(sys.argv)
+def swirl(expr, cache_path="", env_path="") -> Any:
+    env = get_env_data(pickle_path=cache_path, pickle_env=env_path)
+    result = simple_eval(expr, functions=env)
+    return result
 
 
 if __name__ == "__main__":

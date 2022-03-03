@@ -1,0 +1,8 @@
+{
+  "_id": "",
+  "owner_id": "",
+  "name": "minusOne",
+  "variables": ["x"],
+  "formula": "{x} - 1",
+  "description": "Just my macro"
+}

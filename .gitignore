@@ -1,18 +1,23 @@
 # cache
-__pycache__
+*__pycache__
 poetry_cache
-.mypy_cache
+*.mypy_cache
 .vscode
 
 # dev
 build
 dist
 project_files
-tests
 .venv
-.spec
-
 swirl/bin
 swirl/cache
 swirl/env
 swirler.spec
+
+# tests
+tests/__init__.py
+tests/cache
+tests/scratch.py
+tests/scratch2.py
+tests/swirler.py
+
