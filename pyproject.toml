@@ -6,9 +6,8 @@ authors = ["arkhon7 <reviuy9@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-simpleeval = "^0.9.12"
 dacite = "^1.6.0"
-fastapi = {extras = ["all"], version = "^0.74.1"}
+dill = "^0.3.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

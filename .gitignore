@@ -5,6 +5,14 @@ poetry_cache
 .vscode
 
 # dev
+build
+dist
 project_files
 tests
 .venv
+.spec
+
+swirl/bin
+swirl/cache
+swirl/env
+swirler.spec
