@@ -1,0 +1,45 @@
+{
+  "_id": "",
+  "owner_id": "",
+  "name": "math",
+  "description": "",
+  "date_created": "",
+  "macros": [
+    {
+      "_id": "",
+      "owner_id": "",
+      "name": "square",
+      "variables": ["x"],
+      "formula": "{x} ** 2",
+      "description": "Just my another macro"
+    },
+    {
+      "_id": "",
+      "owner_id": "",
+      "name": "cube",
+      "variables": ["x"],
+      "formula": "{x} ** 3",
+      "description": "Just my another macro"
+    }
+  ],
+  "dependencies": [
+    {
+      "_id": "",
+      "owner_id": "",
+      "name": "science",
+      "description": "",
+      "date_created": "",
+      "macros": [
+        {
+          "_id": "",
+          "owner_id": "",
+          "name": "force",
+          "variables": ["mass", "acc"],
+          "formula": "{mass} * {acc}",
+          "description": "Just my another macro"
+        }
+      ],
+      "dependencies": []
+    }
+  ]
+}

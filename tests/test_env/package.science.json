@@ -1,0 +1,18 @@
+{
+  "_id": "",
+  "owner_id": "",
+  "name": "science",
+  "description": "",
+  "date_created": "",
+  "macros": [
+    {
+      "_id": "",
+      "owner_id": "",
+      "name": "force",
+      "variables": ["mass", "acc"],
+      "formula": "{mass} * {acc}",
+      "description": "Just my another macro"
+    }
+  ],
+  "dependencies": []
+}

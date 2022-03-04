@@ -10,6 +10,9 @@ import re
 import json
 import time
 import dill as pickle
+import pprint
+import random
+import keyword
 import logging
 
 from typing import Any, Callable, Optional, List, Dict
@@ -21,11 +24,10 @@ import ast
 import operator as op
 import sys
 import warnings
-from random import random
 
 
 logging.basicConfig(level=logging.DEBUG)
-logging = logging.getLogger(__name__)  # type: ignore
+log = logging.getLogger(__name__)  # type: ignore
 
 PYTHON3 = sys.version_info[0] == 3
 
@@ -136,6 +138,46 @@ class AssignmentAttempted(UserWarning):
     """Assignment not allowed in SimpleEval"""
 
     pass
+
+
+class SwirlError(Exception):
+    def __init__(self, ref: Any = None, message: str = None) -> None:
+        super().__init__()
+        self.ref = ref
+        self.message = message
+
+
+class LengthError(SwirlError):
+    def __init__(self, ref: str) -> None:
+        super().__init__()
+        self.ref = ref
+        self.message = f"__{self.ref}__ should not be longer than 30 characters!"
+
+
+class InvalidNameError(SwirlError):
+    def __init__(self, ref: str) -> None:
+        super().__init__()
+        self.ref = ref
+        self.message = f"__{self.ref}__ is not a valid name!"
+
+
+class KeywordNameError(SwirlError):
+    def __init__(self, ref: str) -> None:
+        super().__init__()
+        self.ref = ref
+        self.message = (
+            f"__{self.ref}__ is already used! Please use another name for this."
+        )
+
+
+# testing errors
+class NameAlreadyUsedError(SwirlError):
+    def __init__(self, ref: str) -> None:
+        super().__init__()
+        self.ref = ref
+        self.message = (
+            f"__{self.ref}__ is already used! Please use another name for this."
+        )
 
 
 ########################################
@@ -641,10 +683,12 @@ class Environment:
 
         if self.packages:
             for package in self.packages:
+                log.debug(f"Building package '{package.name}'")
                 env_data[package.name] = package.build()
 
         if self.macros:
             for macro in self.macros:
+                log.debug(f"Building package '{macro.name}'")
                 env_data[macro.name] = macro.build(env=env_data)
 
         return env_data
@@ -674,8 +718,13 @@ class Package:
             else:
                 macros = {mac.name: mac.build() for mac in self.macros}
                 package = type(self.name, (), macros)
+
         else:
-            logging.debug(f"Package {self.name} has no macros.")
+            log.debug(f"Package {self.name} has no macros.")
+
+        package.__module__ = "__main__"
+
+        log.debug(f"{package}")
 
         return package
 
@@ -703,7 +752,89 @@ class Macro:
         macro_callable: Callable = eval(
             eval_str, {"env": env, "simple_eval": simple_eval}
         )
+
+        self.validate().test_macro(macro_callable, env)
+
         return macro_callable
+
+    def validate(self) -> Macro:
+        return self.is_valid_name().is_valid_variables()
+
+    # testing at runtime
+    def test_macro(self, func: Callable, env: Dict = None) -> Macro:
+        if self.variables:
+            test_str = f"{self.name}({', '.join([str(random.randint(1, 5)) for _ in self.variables])})"
+
+        else:
+            test_str = f"{self.name}()"
+
+        if env:
+            if not env.get(self.name, False):
+                test_env = env
+                test_env[self.name] = func
+                simple_eval(test_str, functions=test_env)
+                log.debug(f"PASSED: {self.name}")
+                return self
+            else:
+                raise NameAlreadyUsedError(ref=self.name)
+        else:
+            simple_eval(test_str, functions={self.name: func})
+            log.debug(f"PASSED: {self.name}")
+            return self
+
+    def is_valid_name(self) -> Macro:
+        valid_pattern = r"^[_a-zA-Z*][_a-zA-Z0-9=]+"
+        result = re.match(valid_pattern, self.name)
+        if result:
+            match_res = result.group()
+            self.is_valid_length(match_res)
+            self.is_equal(match_res, self.name)
+            self.is_not_keyword(match_res)
+            return self
+        else:
+            self.is_char(self.name)
+            return self
+
+    def is_valid_variables(self) -> Macro:
+
+        valid_pattern = r"^[_a-zA-Z0-9*]+(\s*=?\s*[0-9.True|False|]+)?"
+        if self.variables:
+            for v in self.variables:
+                var = v.strip()
+                result = re.match(valid_pattern, var)
+                if result:
+                    match_res = result.group()
+                    self.is_valid_length(match_res)
+                    self.is_equal(match_res, var)
+                    self.is_not_keyword(match_res)
+                else:
+                    self.is_char(var)
+
+        return self
+
+    def is_char(self, raw_result: str) -> Optional[bool]:
+        if len(raw_result) == 1 and isinstance(raw_result, str):
+            return True
+
+        raise InvalidNameError(ref=raw_result)
+
+    def is_valid_length(self, match_result: str) -> Optional[bool]:
+        if len(match_result) <= 30:
+            return True
+
+        raise LengthError(ref=match_result)
+
+    def is_equal(self, match_result: str, raw_result: str) -> Optional[bool]:
+        if match_result == raw_result:
+            return True
+
+        raise InvalidNameError(ref=raw_result)
+
+    def is_not_keyword(self, match_result: str) -> Optional[bool]:
+        if match_result not in keyword.kwlist:
+            return True
+
+        raise KeywordNameError(ref=match_result)
 
 
 def get_env_data(pickle_path, pickle_env) -> Dict:
@@ -713,8 +844,8 @@ def get_env_data(pickle_path, pickle_env) -> Dict:
             return env_data
 
     except Exception as e:
-        logging.debug(e)
-        logging.debug("pickle not found, creating new...")
+        log.debug(e)
+        log.debug("pickle not found, creating new...")
         env_data = create_env_data(pickle_path, pickle_env)
         return env_data
 
@@ -730,7 +861,7 @@ def create_env_data(pickle_path, env_files_path) -> Dict:
         result = re.search(pattern, file)
         if result:
             if (valid_file := result.group()) == file:
-                logging.debug(f"reading {valid_file}")
+                log.debug(f"reading {valid_file}")
                 with open(f"{env_files_path}/{valid_file}", "r+") as json_file:
                     try:
                         data = json.load(json_file)
@@ -742,7 +873,7 @@ def create_env_data(pickle_path, env_files_path) -> Dict:
                             package = load_package_data(data)
                             packages.append(package)
                     except json.JSONDecodeError:
-                        logging.debug(f"Missing details on {file}")
+                        log.debug(f"Missing details on {file}")
 
     env = Environment(_id="7", macros=macros, packages=packages)
     pickle_data = env.build()
@@ -751,7 +882,7 @@ def create_env_data(pickle_path, env_files_path) -> Dict:
     with open(f"{pickle_path}/swirler.pkl", "wb") as to_pickle:
         pickle.dump(pickle_data, to_pickle)
 
-    logging.debug(env)
+    log.debug(f"{pprint.pformat(pickle_data)}")
     return pickle_data
 
 
@@ -776,13 +907,12 @@ def start():
     sys.stdout.write(str(result))
 
 
-def swirl(expr, cache_path="", env_path="") -> Any:
-    env = get_env_data(pickle_path=cache_path, pickle_env=env_path)
-    result = simple_eval(expr, functions=env)
+def swirl(expr, env) -> Any:
+    result = str(simple_eval(expr, functions=env))
     return result
 
 
 if __name__ == "__main__":
     start_time = time.time()
     start()
-    logging.debug("build time %s seconds" % (time.time() - start_time))
+    log.debug("build time %s seconds" % (time.time() - start_time))
