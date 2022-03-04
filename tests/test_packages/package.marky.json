@@ -1,0 +1,53 @@
+{
+  "_id": "",
+  "owner_id": "",
+  "name": "mk",
+  "description": "",
+  "date_created": "",
+  "macros": [
+    {
+      "_id": "",
+      "owner_id": "",
+      "name": "best_girl",
+      "variables": [],
+      "formula": "{'Ena Shinonome'}",
+      "description": "Just my another macro"
+    },
+    {
+      "_id": "",
+      "owner_id": "",
+      "name": "grav_pot_esc_spd",
+      "variables": ["radius", "mass"],
+      "formula": "math.sqrt((2 * gravity() * {mass})/ {radius})",
+      "description": "Just my another macro"
+    }
+  ],
+  "dependencies": [
+    {
+      "_id": "",
+      "owner_id": "",
+      "name": "science",
+      "description": "",
+      "date_created": "",
+      "macros": [
+        {
+          "_id": "",
+          "owner_id": "",
+          "name": "force",
+          "variables": ["mass", "acc"],
+          "formula": "{mass} * {acc}",
+          "description": "Just my another macro"
+        },
+        {
+          "_id": "",
+          "owner_id": "",
+          "name": "gravity",
+          "variables": ["default=9.8"],
+          "formula": "{default}",
+          "description": "Just my another macro"
+        }
+      ],
+      "dependencies": []
+    }
+  ]
+}

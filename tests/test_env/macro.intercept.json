@@ -1,0 +1,8 @@
+{
+  "_id": "",
+  "owner_id": "",
+  "name": "SlopeIntercept",
+  "variables": ["m" , "b"],
+  "formula": "{m} + {b}",
+  "description": "Just my macro"
+}

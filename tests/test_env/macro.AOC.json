@@ -1,0 +1,8 @@
+{
+  "_id": "",
+  "owner_id": "",
+  "name": "AreaofCircle",
+  "variables": ["r"],
+  "formula": "math.pi * {r} ** 2",
+  "description": "Just my macro"
+}

@@ -1,8 +1,0 @@
-{
-  "_id": "",
-  "owner_id": "",
-  "name": "my_macro2",
-  "variables": ["x", "y"],
-  "formula": "{x} + {y}",
-  "description": "Just my another macro"
-}

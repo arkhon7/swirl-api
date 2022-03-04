@@ -1,8 +1,0 @@
-{
-  "_id": "",
-  "owner_id": "",
-  "name": "perisquarePlusOne",
-  "variables": ["x"],
-  "formula": "math.perisquare({x}) + 1",
-  "description": "Just my another macro"
-}

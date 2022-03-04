@@ -1,8 +1,8 @@
 {
   "_id": "",
   "owner_id": "",
-  "name": "factorial",
+  "name": "Sine",
   "variables": ["x"],
-  "formula": "1 if {x} <= 1 else {x}*factorial({x}-1)",
+  "formula": "math.sin({x})",
   "description": "Just my macro"
 }

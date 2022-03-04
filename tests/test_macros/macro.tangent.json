@@ -1,8 +1,8 @@
 {
   "_id": "",
   "owner_id": "",
-  "name": "minusOne",
+  "name": "Tangent",
   "variables": ["x"],
-  "formula": "{x} - 1",
+  "formula": "math.tan({x})",
   "description": "Just my macro"
 }

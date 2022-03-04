@@ -1,0 +1,8 @@
+{
+  "_id": "",
+  "owner_id": "",
+  "name": "CircumferenceOfCircle",
+  "variables": ["r"],
+  "formula": "2 * math.pi * {r}",
+  "description": "Just my macro"
+}

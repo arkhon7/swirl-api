@@ -1,0 +1,8 @@
+{
+  "_id": "",
+  "owner_id": "",
+  "name": "SlopeFormula",
+  "variables": ["a" , "b" , "c" , "d"],
+  "formula": "({b} - {a}) / ({c} - {d})",
+  "description": "Just my macro"
+}

@@ -1,8 +1,8 @@
 {
   "_id": "",
   "owner_id": "",
-  "name": "multiplyTwo",
+  "name": "Cosine",
   "variables": ["x"],
-  "formula": "{x} * 2",
+  "formula": "math.cos({x})",
   "description": "Just my macro"
 }

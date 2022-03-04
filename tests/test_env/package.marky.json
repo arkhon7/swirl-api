@@ -1,24 +1,24 @@
 {
   "_id": "",
   "owner_id": "",
-  "name": "math",
+  "name": "mk",
   "description": "",
   "date_created": "",
   "macros": [
     {
       "_id": "",
       "owner_id": "",
-      "name": "square",
-      "variables": ["x"],
-      "formula": "{x} ** 2",
+      "name": "best_girl",
+      "variables": [],
+      "formula": "'Ena Shinonome'",
       "description": "Just my another macro"
     },
     {
       "_id": "",
       "owner_id": "",
-      "name": "cube",
-      "variables": ["x"],
-      "formula": "{x} ** 3",
+      "name": "grav_pot_esc_spd",
+      "variables": ["radius", "mass"],
+      "formula": "math.sqrt((2 * science.gravity() * {mass})/ {radius})",
       "description": "Just my another macro"
     }
   ],
@@ -36,6 +36,14 @@
           "name": "force",
           "variables": ["mass", "acc"],
           "formula": "{mass} * {acc}",
+          "description": "Just my another macro"
+        },
+        {
+          "_id": "",
+          "owner_id": "",
+          "name": "gravity",
+          "variables": ["default=9.8"],
+          "formula": "{default}",
           "description": "Just my another macro"
         }
       ],
