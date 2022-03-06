@@ -1,5 +1,8 @@
-"""A python script that bundles plugins and executes calculations. This will need
-a cache folder for caching and environment folder where packages/macros are placed.
+"""A python script that bundles plugins and executes calculations.
+
+This will need a cache folder for caching and environment folder (all in same directory)
+where packages/macros json files are placed.
+
 every package should be named with 'package.<name>.json' to be detected as a package,
 or 'macro.<name>.json' if its a macro."""
 
@@ -11,6 +14,7 @@ import json
 import time
 import dill as pickle
 import pprint
+import math
 import random
 import keyword
 import logging
@@ -42,6 +46,7 @@ MAX_POWER = 1000  # highest exponent
 MAX_SHIFT = 10000  # highest << or >> (lshift / rshift)
 DISALLOW_PREFIXES = ["_", "func_"]
 DISALLOW_METHODS = ["format", "format_map", "mro"]
+DEFAULT_PACKAGES = {"math": math}
 
 
 # Disallow functions:
@@ -54,9 +59,7 @@ DISALLOW_METHODS = ["format", "format_map", "mro"]
 
 
 DISALLOW_FUNCTIONS = {type, isinstance, eval, getattr, setattr, repr, compile, open}
-if hasattr(__builtins__, "help") or (
-    hasattr(__builtins__, "__contains__") and "help" in __builtins__  # type: ignore
-):
+if hasattr(__builtins__, "help") or (hasattr(__builtins__, "__contains__") and "help" in __builtins__):  # type: ignore
     # PyInstaller environment doesn't include this module.
     DISALLOW_FUNCTIONS.add(help)
 
@@ -80,9 +83,7 @@ class FunctionNotDefined(InvalidExpression):
     """sorry! That function isn't defined!"""
 
     def __init__(self, func_name, expression):
-        self.message = "Function '{0}' not defined," " for expression '{1}'.".format(
-            func_name, expression
-        )
+        self.message = "Function '{0}' not defined," " for expression '{1}'.".format(func_name, expression)
         setattr(self, "func_name", func_name)  # bypass 2to3 confusion.
         self.expression = expression
 
@@ -94,9 +95,7 @@ class NameNotDefined(InvalidExpression):
 
     def __init__(self, name, expression):
         self.name = name
-        self.message = "'{0}' is not defined for expression '{1}'".format(
-            name, expression
-        )
+        self.message = "'{0}' is not defined for expression '{1}'".format(name, expression)
         self.expression = expression
 
         super(InvalidExpression, self).__init__(self.message)
@@ -106,9 +105,7 @@ class AttributeDoesNotExist(InvalidExpression):
     """attribute does not exist"""
 
     def __init__(self, attr, expression):
-        self.message = "Attribute '{0}' does not exist in expression '{1}'".format(
-            attr, expression
-        )
+        self.message = "Attribute '{0}' does not exist in expression '{1}'".format(attr, expression)
         self.attr = attr
         self.expression = expression
 
@@ -165,9 +162,7 @@ class KeywordNameError(SwirlError):
     def __init__(self, ref: str) -> None:
         super().__init__()
         self.ref = ref
-        self.message = (
-            f"__{self.ref}__ is already used! Please use another name for this."
-        )
+        self.message = f"__{self.ref}__ is already used! Please use another name for this."
 
 
 # testing errors
@@ -175,9 +170,7 @@ class NameAlreadyUsedError(SwirlError):
     def __init__(self, ref: str) -> None:
         super().__init__()
         self.ref = ref
-        self.message = (
-            f"__{self.ref}__ is already used! Please use another name for this."
-        )
+        self.message = f"__{self.ref}__ is already used! Please use another name for this."
 
 
 ########################################
@@ -214,9 +207,7 @@ def safe_add(a, b):  # pylint: disable=invalid-name
 
     if hasattr(a, "__len__") and hasattr(b, "__len__"):
         if len(a) + len(b) > MAX_STRING_LENGTH:
-            raise IterableTooLong(
-                "Sorry, adding those two together would" " make something too long."
-            )
+            raise IterableTooLong("Sorry, adding those two together would" " make something too long.")
     return a + b
 
 
@@ -333,9 +324,7 @@ class SimpleEval(object):  # pylint: disable=too-few-public-methods
         # py3.6, f-strings
         if hasattr(ast, "JoinedStr"):
             self.nodes[ast.JoinedStr] = self._eval_joinedstr  # f-string
-            self.nodes[
-                ast.FormattedValue
-            ] = self._eval_formattedvalue  # formatted value in f-string
+            self.nodes[ast.FormattedValue] = self._eval_formattedvalue  # formatted value in f-string
 
         # py3.8 uses ast.Constant instead of ast.Num, ast.Str, ast.NameConstant
         if hasattr(ast, "Constant"):
@@ -349,9 +338,7 @@ class SimpleEval(object):  # pylint: disable=too-few-public-methods
 
         for f in self.functions.values():
             if f in DISALLOW_FUNCTIONS:
-                raise FeatureNotAvailable(
-                    "This function {} is a really bad idea.".format(f)
-                )
+                raise FeatureNotAvailable("This function {} is a really bad idea.".format(f))
 
     def __del__(self):
         self.nodes = None
@@ -373,10 +360,7 @@ class SimpleEval(object):  # pylint: disable=too-few-public-methods
         try:
             handler = self.nodes[type(node)]
         except KeyError:
-            raise FeatureNotAvailable(
-                "Sorry, {0} is not available in this "
-                "evaluator".format(type(node).__name__)
-            )
+            raise FeatureNotAvailable("Sorry, {0} is not available in this " "evaluator".format(type(node).__name__))
 
         return handler(node)
 
@@ -408,8 +392,7 @@ class SimpleEval(object):  # pylint: disable=too-few-public-methods
     def _eval_str(node):
         if len(node.s) > MAX_STRING_LENGTH:
             raise IterableTooLong(
-                "String Literal in statement is too long!"
-                " ({0}, when {1} is max)".format(len(node.s), MAX_STRING_LENGTH)
+                "String Literal in statement is too long!" " ({0}, when {1} is max)".format(len(node.s), MAX_STRING_LENGTH)
             )
         return node.s
 
@@ -417,8 +400,7 @@ class SimpleEval(object):  # pylint: disable=too-few-public-methods
     def _eval_constant(node):
         if hasattr(node.value, "__len__") and len(node.value) > MAX_STRING_LENGTH:
             raise IterableTooLong(
-                "Literal in statement is too long!"
-                " ({0}, when {1} is max)".format(len(node.value), MAX_STRING_LENGTH)
+                "Literal in statement is too long!" " ({0}, when {1} is max)".format(len(node.value), MAX_STRING_LENGTH)
             )
         return node.value
 
@@ -426,9 +408,7 @@ class SimpleEval(object):  # pylint: disable=too-few-public-methods
         return self.operators[type(node.op)](self._eval(node.operand))
 
     def _eval_binop(self, node):
-        return self.operators[type(node.op)](
-            self._eval(node.left), self._eval(node.right)
-        )
+        return self.operators[type(node.op)](self._eval(node.left), self._eval(node.right))
 
     def _eval_boolop(self, node):
         if isinstance(node.op, ast.And):
@@ -457,9 +437,7 @@ class SimpleEval(object):  # pylint: disable=too-few-public-methods
         return to_return
 
     def _eval_ifexp(self, node):
-        return (
-            self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
-        )
+        return self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
 
     def _eval_call(self, node):
         if isinstance(node.func, ast.Attribute):
@@ -496,9 +474,7 @@ class SimpleEval(object):  # pylint: disable=too-few-public-methods
                 return self.names(node)
             else:
                 raise InvalidExpression(
-                    'Trying to use name (variable) "{0}"'
-                    ' when no "names" defined for'
-                    " evaluator".format(node.id)
+                    'Trying to use name (variable) "{0}"' ' when no "names" defined for' " evaluator".format(node.id)
                 )
 
         except KeyError:
@@ -519,14 +495,10 @@ class SimpleEval(object):  # pylint: disable=too-few-public-methods
         for prefix in DISALLOW_PREFIXES:
             if node.attr.startswith(prefix):
                 raise FeatureNotAvailable(
-                    "Sorry, access to __attributes "
-                    " or func_ attributes is not available. "
-                    "({0})".format(node.attr)
+                    "Sorry, access to __attributes " " or func_ attributes is not available. " "({0})".format(node.attr)
                 )
         if node.attr in DISALLOW_METHODS:
-            raise FeatureNotAvailable(
-                "Sorry, this method is not available. " "({0})".format(node.attr)
-            )
+            raise FeatureNotAvailable("Sorry, this method is not available. " "({0})".format(node.attr))
         # eval node
         node_evaluated = self._eval(node.value)
 
@@ -679,7 +651,7 @@ class Environment:
     def build(self) -> Dict:
         """build env data for caching"""
 
-        env_data: Dict[str, Any] = dict()
+        env_data: Dict[str, Any] = DEFAULT_PACKAGES
 
         if self.packages:
             for package in self.packages:
@@ -688,7 +660,7 @@ class Environment:
 
         if self.macros:
             for macro in self.macros:
-                log.debug(f"Building package '{macro.name}'")
+                log.debug(f"Building macro '{macro.name}'")
                 env_data[macro.name] = macro.build(env=env_data)
 
         return env_data
@@ -706,13 +678,12 @@ class Package:
 
     def build(self) -> type:
         """build the object of package"""
-
         if self.macros:
             if self.dependencies:
-                deps_dict = {dep.name: dep.build() for dep in self.dependencies}
-                macros = {mac.name: mac.build(env=deps_dict) for mac in self.macros}
+                deps_dict: Dict = {dep.name: dep.build() for dep in self.dependencies}
+                macros: Dict = {mac.name: mac.build(env=deps_dict) for mac in self.macros}
 
-                deps = tuple([dep.build() for dep in self.dependencies])
+                deps = tuple([dep for dep in deps_dict.values()])
                 package = type(self.name, deps, macros)
 
             else:
@@ -725,7 +696,6 @@ class Package:
         package.__module__ = "__main__"
 
         log.debug(f"{package}")
-
         return package
 
 
@@ -738,49 +708,51 @@ class Macro:
     formula: str
     description: Optional[str] = None
 
-    def build(self, env: Dict = None) -> Callable:
+    def build(self, env: Dict = dict()) -> Callable:
         """build the callable of macro"""
+
+        # if env:
+        # putting default packages
+        env = env | DEFAULT_PACKAGES
+
         if self.variables:
             var_str: str = ", ".join(self.variables)
 
         else:
             var_str = ""
 
-        eval_str: str = (
-            f'lambda {var_str}: simple_eval(f"{self.formula}", functions=env)'
-        )
-        macro_callable: Callable = eval(
-            eval_str, {"env": env, "simple_eval": simple_eval}
-        )
+        eval_str: str = f'lambda {var_str}: simple_eval(f"{self.formula}", functions=env)'
+        macro_callable: Callable = eval(eval_str, {"env": env, "simple_eval": simple_eval})
 
         self.validate().test_macro(macro_callable, env)
 
         return macro_callable
 
     def validate(self) -> Macro:
-        return self.is_valid_name().is_valid_variables()
+        self.is_valid_name().is_valid_variables()
+        log.debug(f"Finished validation '{self.name}'")
+        return self
 
     # testing at runtime
-    def test_macro(self, func: Callable, env: Dict = None) -> Macro:
+    def test_macro(self, func: Callable, env: Dict = dict()) -> Macro:
         if self.variables:
-            test_str = f"{self.name}({', '.join([str(random.randint(1, 5)) for _ in self.variables])})"
+            test_str = f"{self.name}({', '.join([str(random.randint(5, 10)) for _ in self.variables])})"
 
         else:
             test_str = f"{self.name}()"
 
-        if env:
-            if not env.get(self.name, False):
-                test_env = env
-                test_env[self.name] = func
+        log.debug(env)
+        if not env.get(self.name, False):
+            try:
+                test_env = env | {self.name: func}
                 simple_eval(test_str, functions=test_env)
-                log.debug(f"PASSED: {self.name}")
+                log.debug(f"Finished macro '{self.name}'")
                 return self
-            else:
-                raise NameAlreadyUsedError(ref=self.name)
+
+            except ZeroDivisionError:
+                return self
         else:
-            simple_eval(test_str, functions={self.name: func})
-            log.debug(f"PASSED: {self.name}")
-            return self
+            raise NameAlreadyUsedError(ref=self.name)
 
     def is_valid_name(self) -> Macro:
         valid_pattern = r"^[_a-zA-Z*][_a-zA-Z0-9=]+"
@@ -812,17 +784,17 @@ class Macro:
 
         return self
 
-    def is_char(self, raw_result: str) -> Optional[bool]:
-        if len(raw_result) == 1 and isinstance(raw_result, str):
-            return True
-
-        raise InvalidNameError(ref=raw_result)
-
     def is_valid_length(self, match_result: str) -> Optional[bool]:
         if len(match_result) <= 30:
             return True
 
         raise LengthError(ref=match_result)
+
+    def is_char(self, raw_result: str) -> Optional[bool]:
+        if len(raw_result) == 1 and isinstance(raw_result, str):
+            return True
+
+        raise InvalidNameError(ref=raw_result)
 
     def is_equal(self, match_result: str, raw_result: str) -> Optional[bool]:
         if match_result == raw_result:
@@ -882,7 +854,7 @@ def create_env_data(pickle_path, env_files_path) -> Dict:
     with open(f"{pickle_path}/swirler.pkl", "wb") as to_pickle:
         pickle.dump(pickle_data, to_pickle)
 
-    log.debug(f"{pprint.pformat(pickle_data)}")
+    log.debug(f"Final Data to be pickled:\n{pprint.pformat(pickle_data)}\n")
     return pickle_data
 
 
@@ -896,6 +868,9 @@ def load_package_data(data: Dict) -> Package:
 
 # API METHODS
 
+# ADD UPDATE METHOD TO BE CALLED WHENEVER THE APP MAKE
+# CHANGES ON THE FILES
+
 
 def start():
     args = sys.argv
@@ -903,11 +878,12 @@ def start():
     env_path = args[2]
     cache_path = args[3]
     env = get_env_data(pickle_path=cache_path, pickle_env=env_path)
-    result = simple_eval(expr, functions=env)
+    result = swirl(expr, env=env)
     sys.stdout.write(str(result))
 
 
 def swirl(expr, env) -> Any:
+    env = env | DEFAULT_PACKAGES
     result = str(simple_eval(expr, functions=env))
     return result
 

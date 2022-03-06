@@ -45,9 +45,36 @@
           "variables": ["default=9.8"],
           "formula": "{default}",
           "description": "Just my another macro"
+        },
+        {
+          "_id": "",
+          "owner_id": "",
+          "name": "grav_pot_esc_spd",
+          "variables": ["radius", "mass"],
+          "formula": "math.sqrt((2 * science.gravity() * {mass})/ {radius})",
+          "description": "Just my another macro"
         }
       ],
-      "dependencies": []
+      "dependencies": [
+        {
+          "_id": "",
+          "owner_id": "",
+          "name": "science",
+          "description": "",
+          "date_created": "",
+          "macros": [
+            {
+              "_id": "",
+              "owner_id": "",
+              "name": "gravity",
+              "variables": ["default=9.8"],
+              "formula": "{default}",
+              "description": "Just my another macro"
+            }
+          ],
+          "dependencies": []
+        }
+      ]
     }
   ]
 }

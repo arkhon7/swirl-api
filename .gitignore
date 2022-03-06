@@ -13,6 +13,7 @@ swirl/bin
 swirl/cache
 swirl/env
 swirler.spec
+diagrams
 
 # tests
 tests/__init__.py
