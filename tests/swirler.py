@@ -675,7 +675,6 @@ class Package:
     date_created: str
     macros: Optional[List[Macro]] = None
     dependencies: Optional[List[Package]] = None
-    enabled: bool = True
 
     def build(self) -> type:
         """build the object of package"""
@@ -696,7 +695,7 @@ class Package:
 
         package.__module__ = "__main__"
 
-        log.debug(f"{package}")
+        # log.debug(f"{package}")
         return package
 
 
@@ -708,7 +707,6 @@ class Macro:
     variables: Optional[List[str]]
     formula: str
     description: Optional[str] = None
-    working: bool = True
 
     def build(self, env: Dict = dict()) -> Callable:
         """build the callable of macro"""
@@ -719,16 +717,23 @@ class Macro:
 
         if self.variables:
             var_str: str = ", ".join(self.variables)
-
+            var_str_dict: str = ", ".join(
+                [f'"{self.filter_defaults(var)}": {self.filter_defaults(var)}' for var in self.variables]
+            )
+            eval_str: str = f'(lambda {var_str}: simple_eval("{self.formula}", names={{{var_str_dict}}}, functions=env))'
+            eval_result: Callable | Any = eval(eval_str, {"env": env, "simple_eval": simple_eval})
         else:
             var_str = ""
+            var_str_dict = ""
+            eval_str = f'simple_eval(f"{self.formula}", functions=env)'
+            eval_result = eval(eval_str, {"env": env, "simple_eval": simple_eval})
 
-        eval_str: str = f'lambda {var_str}: simple_eval(f"{self.formula}", functions=env)'
-        macro_callable: Callable = eval(eval_str, {"env": env, "simple_eval": simple_eval})
+        self.validate().test_macro(eval_result, env)
 
-        self.validate().test_macro(macro_callable, env)
+        return eval_result
 
-        return macro_callable
+    def filter_defaults(self, var) -> str:
+        return var.split("=")[0]
 
     def validate(self) -> Macro:
         self.is_valid_name().is_valid_variables()
@@ -741,9 +746,9 @@ class Macro:
             test_str = f"{self.name}({', '.join([str(random.randint(5, 10)) for _ in self.variables])})"
 
         else:
-            test_str = f"{self.name}()"
+            test_str = f"{self.name}"
 
-        log.debug(env)
+        # log.debug(env)
         if not env.get(self.name, False):
             try:
                 test_env = env | {self.name: func}
@@ -880,7 +885,7 @@ def start():
     env_path = args[2]
     cache_path = args[3]
     env = get_env_data(pickle_path=cache_path, pickle_env=env_path)
-    result = swirl(expr, env=env)
+    result = swirl(expr, functions=env)
     sys.stdout.write(str(result))
 
 

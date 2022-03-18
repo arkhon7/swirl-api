@@ -62,8 +62,14 @@ class PackageTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            swirler.swirl("mk.best_girl()", self.env),
-            swirler.swirl("mk.best_girl()", self.env),
+            swirler.swirl("mk.best_girl", self.env),
+            swirler.swirl("mk.best_girl", self.env),
+        )
+
+    def test_science(self):
+        self.assertEqual(
+            swirler.swirl("science.force(5,5)", self.env),
+            swirler.swirl("science.force(5,5)", self.env),
         )
 
 
@@ -74,7 +80,7 @@ class RandomTest(unittest.TestCase):
         self.env = env
 
     def test_swirl(self):
-        print(swirler.swirl("GravPotEscSpd(6, 4)", self.env))
+        print(swirler.swirl("mk.best_girl", self.env))
 
 
 if __name__ == "__main__":

@@ -3,6 +3,6 @@
   "owner_id": "",
   "name": "Cosine",
   "variables": ["x"],
-  "formula": "math.cos({x})",
+  "formula": "math.cos(x)",
   "description": "Just my macro"
 }

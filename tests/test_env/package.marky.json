@@ -18,7 +18,7 @@
       "owner_id": "",
       "name": "grav_pot_esc_spd",
       "variables": ["radius", "mass"],
-      "formula": "math.sqrt((2 * science.gravity() * {mass})/ {radius})",
+      "formula": "science.grav_pot_esc_spd(radius, mass)",
       "description": "Just my another macro"
     }
   ],
@@ -35,15 +35,15 @@
           "owner_id": "",
           "name": "force",
           "variables": ["mass", "acc"],
-          "formula": "{mass} * {acc}",
+          "formula": "mass * acc",
           "description": "Just my another macro"
         },
         {
           "_id": "",
           "owner_id": "",
           "name": "gravity",
-          "variables": ["default=9.8"],
-          "formula": "{default}",
+          "variables": [],
+          "formula": "9.8",
           "description": "Just my another macro"
         },
         {
@@ -51,7 +51,7 @@
           "owner_id": "",
           "name": "grav_pot_esc_spd",
           "variables": ["radius", "mass"],
-          "formula": "math.sqrt((2 * science.gravity() * {mass})/ {radius})",
+          "formula": "math.sqrt((2 * science.gravity * mass)/ radius)",
           "description": "Just my another macro"
         }
       ],
@@ -67,8 +67,8 @@
               "_id": "",
               "owner_id": "",
               "name": "gravity",
-              "variables": ["default=9.8"],
-              "formula": "{default}",
+              "variables": [],
+              "formula": "9.8",
               "description": "Just my another macro"
             }
           ],

@@ -3,6 +3,6 @@
   "owner_id": "",
   "name": "Sine",
   "variables": ["x"],
-  "formula": "math.sin({x})",
+  "formula": "math.sin(x)",
   "description": "Just my macro"
 }

@@ -3,6 +3,6 @@
   "owner_id": "",
   "name": "Tangent",
   "variables": ["x"],
-  "formula": "math.tan({x})",
+  "formula": "math.tan(x)",
   "description": "Just my macro"
 }

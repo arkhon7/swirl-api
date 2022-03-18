@@ -2,7 +2,7 @@
   "_id": "",
   "owner_id": "",
   "name": "VolumeOfCuboid",
-  "variables": ["w" , "h"],
-  "formula": "math.pi * {w} * {h}",
+  "variables": ["w", "h"],
+  "formula": "math.pi * w * h",
   "description": "Just my macro"
 }

@@ -2,7 +2,7 @@
   "_id": "",
   "owner_id": "",
   "name": "Profit",
-  "variables": ["s" , "c"],
-  "formula": "{s} - {c}",
+  "variables": ["s", "c"],
+  "formula": "s - c",
   "description": "Just my macro"
 }

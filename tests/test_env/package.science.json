@@ -10,7 +10,7 @@
       "owner_id": "",
       "name": "force",
       "variables": ["mass", "acc"],
-      "formula": "{mass} * {acc}",
+      "formula": "mass * acc",
       "description": "Just my another macro"
     }
   ],

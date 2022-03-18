@@ -19,6 +19,4 @@ diagrams
 tests/__init__.py
 tests/cache
 tests/scratch.py
-tests/scratch2.py
-tests/swirler.py
 *.rar
