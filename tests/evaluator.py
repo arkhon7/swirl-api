@@ -1,36 +1,17 @@
-"""A python script that bundles plugins and executes calculations.
-
-This will need a cache folder for caching and environment folder (all in same directory)
-where packages/macros json files are placed.
-
-every package should be named with 'package.<name>.json' to be detected as a package,
-or 'macro.<name>.json' if its a macro."""
-
-from __future__ import annotations
-
-import os
-import re
-import json
-import time
-import dill as pickle
-import pprint
-import math
-import random
-import keyword
-import logging
-
-from typing import Any, Callable, Optional, List, Dict
-from dacite import from_dict
-from dataclasses import dataclass
-
-
 import ast
+import dill as pickle
 import operator as op
 import sys
 import warnings
+import random
+import math
+import time
+import logging
 
 
-logging.basicConfig(level=logging.DEBUG)
+from pathlib import Path
+from typing import Dict, Optional
+
 log = logging.getLogger(__name__)  # type: ignore
 
 PYTHON3 = sys.version_info[0] == 3
@@ -135,42 +116,6 @@ class AssignmentAttempted(UserWarning):
     """Assignment not allowed in SimpleEval"""
 
     pass
-
-
-class SwirlError(Exception):
-    def __init__(self, ref: Any = None, message: str = None) -> None:
-        super().__init__()
-        self.ref = ref
-        self.message = message
-
-
-class LengthError(SwirlError):
-    def __init__(self, ref: str) -> None:
-        super().__init__()
-        self.ref = ref
-        self.message = f"__{self.ref}__ should not be longer than 30 characters!"
-
-
-class InvalidNameError(SwirlError):
-    def __init__(self, ref: str) -> None:
-        super().__init__()
-        self.ref = ref
-        self.message = f"__{self.ref}__ is not a valid name!"
-
-
-class KeywordNameError(SwirlError):
-    def __init__(self, ref: str) -> None:
-        super().__init__()
-        self.ref = ref
-        self.message = f"__{self.ref}__ is already used! Please use another name for this."
-
-
-# testing errors
-class NameAlreadyUsedError(SwirlError):
-    def __init__(self, ref: str) -> None:
-        super().__init__()
-        self.ref = ref
-        self.message = f"__{self.ref}__ is already used! Please use another name for this."
 
 
 ########################################
@@ -642,260 +587,38 @@ def simple_eval(expr, operators=None, functions=None, names=None):
     return s.eval(expr)
 
 
-@dataclass
-class Environment:
-    _id: str
-    packages: Optional[List[Package]] = None
-    macros: Optional[List[Macro]] = None
-
-    def build(self) -> Dict:
-        """build env data for caching"""
-
-        env_data: Dict[str, Any] = DEFAULT_PACKAGES
-
-        if self.packages:
-            for package in self.packages:
-                log.debug(f"Building package '{package.name}'")
-                env_data[package.name] = package.build()
-
-        if self.macros:
-            for macro in self.macros:
-                log.debug(f"Building macro '{macro.name}'")
-                env_data[macro.name] = macro.build(env=env_data)
-
-        return env_data
+class CalculationDataNotFound(Exception):
+    ...
 
 
-@dataclass
-class Package:
-    _id: str
-    owner_id: str
-    name: str  # namespace
-    description: Optional[str]
-    date_created: str
-    macros: Optional[List[Macro]] = None
-    dependencies: Optional[List[Package]] = None
+def swirl(expr: str, cache_path: str) -> Optional[str]:
+    swl_cache_file = cache_path + "/" + "swl.pkl"
+    cache = Path(swl_cache_file)
 
-    def build(self) -> type:
-        """build the object of package"""
-        if self.macros:
-            if self.dependencies:
-                deps_dict: Dict = {dep.name: dep.build() for dep in self.dependencies}
-                macros: Dict = {mac.name: mac.build(env=deps_dict) for mac in self.macros}
+    if cache.is_file():
+        with open(swl_cache_file, "rb") as swl_cache:
+            calc_data: Dict = pickle.load(swl_cache)
 
-                deps = tuple([dep for dep in deps_dict.values()])
-                package = type(self.name, deps, macros)
+            result = simple_eval(expr, functions=calc_data)
 
-            else:
-                macros = {mac.name: mac.build() for mac in self.macros}
-                package = type(self.name, (), macros)
+            return result
 
-        else:
-            log.debug(f"Package {self.name} has no macros.")
-
-        package.__module__ = "__main__"
-
-        # log.debug(f"{package}")
-        return package
-
-
-@dataclass
-class Macro:
-    _id: str
-    owner_id: str
-    name: str  # caller
-    variables: Optional[List[str]]
-    formula: str
-    description: Optional[str] = None
-
-    def build(self, env: Dict = dict()) -> Callable:
-        """build the callable of macro"""
-
-        # if env:
-        # putting default packages
-        env = env | DEFAULT_PACKAGES
-
-        if self.variables:
-            var_str: str = ", ".join(self.variables)
-            var_str_dict: str = ", ".join(
-                [f'"{self.filter_defaults(var)}": {self.filter_defaults(var)}' for var in self.variables]
-            )
-            eval_str: str = f'(lambda {var_str}: simple_eval("{self.formula}", names={{{var_str_dict}}}, functions=env))'
-            eval_result: Callable | Any = eval(eval_str, {"env": env, "simple_eval": simple_eval})
-        else:
-            var_str = ""
-            var_str_dict = ""
-            eval_str = f'simple_eval(f"{self.formula}", functions=env)'
-            eval_result = eval(eval_str, {"env": env, "simple_eval": simple_eval})
-
-        self.validate().test_macro(eval_result, env)
-
-        return eval_result
-
-    def filter_defaults(self, var) -> str:
-        return var.split("=")[0]
-
-    def validate(self) -> Macro:
-        self.is_valid_name().is_valid_variables()
-        log.debug(f"Finished validation '{self.name}'")
-        return self
-
-    # testing at runtime
-    def test_macro(self, func: Callable, env: Dict = dict()) -> Macro:
-        if self.variables:
-            test_str = f"{self.name}({', '.join([str(random.randint(5, 10)) for _ in self.variables])})"
-
-        else:
-            test_str = f"{self.name}"
-
-        # log.debug(env)
-        if not env.get(self.name, False):
-            try:
-                test_env = env | {self.name: func}
-                simple_eval(test_str, functions=test_env)
-                log.debug(f"Finished macro '{self.name}'")
-                return self
-
-            except ZeroDivisionError:
-                return self
-        else:
-            raise NameAlreadyUsedError(ref=self.name)
-
-    def is_valid_name(self) -> Macro:
-        valid_pattern = r"^[_a-zA-Z*][_a-zA-Z0-9=]+"
-        result = re.match(valid_pattern, self.name)
-        if result:
-            match_res = result.group()
-            self.is_valid_length(match_res)
-            self.is_equal(match_res, self.name)
-            self.is_not_keyword(match_res)
-            return self
-        else:
-            self.is_char(self.name)
-            return self
-
-    def is_valid_variables(self) -> Macro:
-
-        valid_pattern = r"^[_a-zA-Z0-9*]+(\s*=?\s*[0-9.True|False|]+)?"
-        if self.variables:
-            for v in self.variables:
-                var = v.strip()
-                result = re.match(valid_pattern, var)
-                if result:
-                    match_res = result.group()
-                    self.is_valid_length(match_res)
-                    self.is_equal(match_res, var)
-                    self.is_not_keyword(match_res)
-                else:
-                    self.is_char(var)
-
-        return self
-
-    def is_valid_length(self, match_result: str) -> Optional[bool]:
-        if len(match_result) <= 30:
-            return True
-
-        raise LengthError(ref=match_result)
-
-    def is_char(self, raw_result: str) -> Optional[bool]:
-        if len(raw_result) == 1 and isinstance(raw_result, str):
-            return True
-
-        raise InvalidNameError(ref=raw_result)
-
-    def is_equal(self, match_result: str, raw_result: str) -> Optional[bool]:
-        if match_result == raw_result:
-            return True
-
-        raise InvalidNameError(ref=raw_result)
-
-    def is_not_keyword(self, match_result: str) -> Optional[bool]:
-        if match_result not in keyword.kwlist:
-            return True
-
-        raise KeywordNameError(ref=match_result)
-
-
-def get_env_data(pickle_path, pickle_env) -> Dict:
-    try:
-        with open(f"{pickle_path}/swirler.pkl", "rb") as pickled:
-            env_data: Dict = pickle.load(pickled)
-            return env_data
-
-    except Exception as e:
-        log.debug(e)
-        log.debug("pickle not found, creating new...")
-        env_data = create_env_data(pickle_path, pickle_env)
-        return env_data
-
-
-def create_env_data(pickle_path, env_files_path) -> Dict:
-
-    packages: List[Package] = list()
-    macros: List[Macro] = list()
-
-    pattern = r"^[package|macro]+\.[a-zA-Z0-9_]+[a-zA-Z0-9]\.json"
-
-    for file in os.listdir(env_files_path):
-        result = re.search(pattern, file)
-        if result:
-            if (valid_file := result.group()) == file:
-                log.debug(f"reading {valid_file}")
-                with open(f"{env_files_path}/{valid_file}", "r+") as json_file:
-                    try:
-                        data = json.load(json_file)
-                        if valid_file.startswith("macro"):
-                            macro = load_macro_data(data)
-                            macros.append(macro)
-
-                        elif valid_file.startswith("package"):
-                            package = load_package_data(data)
-                            packages.append(package)
-                    except json.JSONDecodeError:
-                        log.debug(f"Missing details on {file}")
-
-    env = Environment(_id="7", macros=macros, packages=packages)
-    pickle_data = env.build()
-
-    # adds to cache
-    with open(f"{pickle_path}/swirler.pkl", "wb") as to_pickle:
-        pickle.dump(pickle_data, to_pickle)
-
-    log.debug(f"Final Data to be pickled:\n{pprint.pformat(pickle_data)}\n")
-    return pickle_data
-
-
-def load_macro_data(data: Dict) -> Macro:
-    return from_dict(Macro, data)
-
-
-def load_package_data(data: Dict) -> Package:
-    return from_dict(Package, data)
-
-
-# API METHODS
-
-# ADD UPDATE METHOD TO BE CALLED WHENEVER THE APP MAKE
-# CHANGES ON THE FILES
-
-
-def start():
-    args = sys.argv
-    expr = args[1]
-    env_path = args[2]
-    cache_path = args[3]
-    env = get_env_data(pickle_path=cache_path, pickle_env=env_path)
-    result = swirl(expr, functions=env)
-    sys.stdout.write(str(result))
-
-
-def swirl(expr, env) -> Any:
-    env = env | DEFAULT_PACKAGES
-    result = str(simple_eval(expr, functions=env))
-    return result
+    else:
+        raise CalculationDataNotFound("File 'swl.pkl' is missing! Please restart the app.")
 
 
 if __name__ == "__main__":
     start_time = time.time()
-    start()
+    args = sys.argv
+    expr = args[1]  # path to the env files
+    cache_path = args[2]  # path to the cache files
+
+    try:
+        result = swirl(expr, cache_path)
+        if result:
+            sys.stdout.write(str(result))
+
+    except Exception as e:
+        sys.stderr.write(str(e))
+
     log.debug("build time %s seconds" % (time.time() - start_time))

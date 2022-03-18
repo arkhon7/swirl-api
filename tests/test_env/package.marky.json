@@ -10,7 +10,7 @@
       "owner_id": "",
       "name": "best_girl",
       "variables": [],
-      "formula": "'Ena Shinonome'",
+      "formula": "'Ena Shinonome'[0:3]",
       "description": "Just my another macro"
     },
     {
