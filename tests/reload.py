@@ -40,6 +40,8 @@ from dacite import from_dict
 from dataclasses import dataclass, asdict
 from pathlib import Path
 
+# from types import ModuleType
+
 import evaluator as evl
 
 
@@ -49,7 +51,7 @@ log = logging.getLogger(__name__)  # type: ignore
 
 # err
 class SwirlError(Exception):
-    def __init__(self, ref: Any = None, message: str = None) -> None:
+    def __init__(self, ref, message) -> None:
         super().__init__()
         self.ref = ref
         self.message = message
@@ -57,31 +59,31 @@ class SwirlError(Exception):
 
 class LengthError(SwirlError):
     def __init__(self, ref: str) -> None:
-        super().__init__()
         self.ref = ref
-        self.message = f"__{self.ref}__ should not be longer than 30 characters!"
+        self.message = f'"{self.ref}" should not be longer than 30 characters!'
+        super().__init__(self.ref, self.message)
 
 
 class InvalidNameError(SwirlError):
     def __init__(self, ref: str) -> None:
-        super().__init__()
         self.ref = ref
-        self.message = f"__{self.ref}__ is not a valid name!"
+        self.message = f'"{self.ref}" is not a valid name!'
+        super().__init__(self.ref, self.message)
 
 
 class KeywordNameError(SwirlError):
     def __init__(self, ref: str) -> None:
-        super().__init__()
         self.ref = ref
-        self.message = f"__{self.ref}__ is already used! Please use another name for this."
+        self.message = f'"{self.ref}" is already used! Please use another name for this.'
+        super().__init__(self.ref, self.message)
 
 
 # testing errors
 class NameAlreadyUsedError(SwirlError):
     def __init__(self, ref: str) -> None:
-        super().__init__()
         self.ref = ref
-        self.message = f"__{self.ref}__ is already used! Please use another name for this."
+        self.message = f'"{self.ref}" is already used! Please use another name for this.'
+        super().__init__(self.ref, self.message)
 
 
 # dataclass
@@ -94,19 +96,28 @@ class Environment:
     def build(self) -> Dict:
         """build env data for caching"""
 
-        env_data: Dict[str, Any] = evl.DEFAULT_PACKAGES
+        env: Dict[str, Any] = evl.DEFAULT_PACKAGES
 
         if self.packages:
             for package in self.packages:
                 log.debug(f"Building package '{package.name}'")
-                env_data[package.name] = package.build()
+
+                if package.name not in env:
+                    env[package.name] = package.build()
+
+                else:
+                    raise NameAlreadyUsedError(ref=package.name)
 
         if self.macros:
             for macro in self.macros:
                 log.debug(f"Building macro '{macro.name}'")
-                env_data[macro.name] = macro.build(env=env_data)
 
-        return env_data
+                if macro.name not in env:
+                    env[macro.name] = macro.build(env=env)
+                else:
+                    raise NameAlreadyUsedError(ref=macro.name)
+
+        return env
 
 
 @dataclass
@@ -119,26 +130,78 @@ class Package:
     macros: Optional[List[Macro]] = None
     dependencies: Optional[List[Package]] = None
 
+    # def build(self) -> type:
+    # """build the object of package"""
+    # if self.macros:
+    #     if self.dependencies:
+    #         deps_dict: Dict = {dep.name: dep.build() for dep in self.dependencies}
+    #         macros: Dict = {mac.name: mac.build(env=deps_dict) for mac in self.macros}
+
+    #         deps = tuple([dep for dep in deps_dict.values()])
+    #         package = type(self.name, deps, macros)
+
+    #     else:
+    #         macros = {mac.name: mac.build() for mac in self.macros}
+    #         package = type(self.name, (), macros)
+
+    # else:
+    #     log.debug(f"Package {self.name} has no macros.")
+    #
+    # package.__module__ = "__main__"
+    # return package
+    # -----------------------------------------------------------------------------------
+    # if self.macros:
+    #     if self.dependencies:
+    #         deps_dict = {}
+    #         for dep in self.dependencies:
+    #             if dep.name not in deps_dict:
+    #                 deps_dict.update({dep.name: dep.build()})
+    #             else:
+    #                 raise NameAlreadyUsedError(ref=dep.name)
+
+    #         macros = {}
+    #         for macro in self.macros:
+    #             if macro.name not in macros:
+    #                 macros.update({macro.name: macro.build(env=deps_dict)})
+    #             else:
+    #                 raise NameAlreadyUsedError(ref=macro.name)
+
+    #         deps = tuple([dep for dep in deps_dict.values()])
+    #         package = type(self.name, deps, macros)
+
+    #     else:
+    #         macros = {}
+    #         for macro in self.macros:
+    #             if macro.name not in macros:
+    #                 macros.update({macro.name: macro.build()})
+    #             else:
+    #                 raise NameAlreadyUsedError(ref=macro.name)
+
+    #         package = type(self.name, (), macros)
+
+    # else:
+    #     log.debug(f"Package {self.name} has no macros.")
+
     def build(self) -> type:
-        """build the object of package"""
+        deps_dict = {}
+        if self.dependencies:
+            for dep in self.dependencies:
+                if dep.name not in deps_dict:
+                    deps_dict.update({dep.name: dep.build()})
+
+                else:
+                    raise NameAlreadyUsedError(ref=dep.name)
+
+        mac_dict = {}
         if self.macros:
-            if self.dependencies:
-                deps_dict: Dict = {dep.name: dep.build() for dep in self.dependencies}
-                macros: Dict = {mac.name: mac.build(env=deps_dict) for mac in self.macros}
+            for mac in self.macros:
+                if mac.name not in mac_dict:
+                    mac_dict.update({mac.name: mac.build(env=deps_dict)})
+                else:
+                    raise NameAlreadyUsedError(ref=mac.name)
 
-                deps = tuple([dep for dep in deps_dict.values()])
-                package = type(self.name, deps, macros)
-
-            else:
-                macros = {mac.name: mac.build() for mac in self.macros}
-                package = type(self.name, (), macros)
-
-        else:
-            log.debug(f"Package {self.name} has no macros.")
-
-        package.__module__ = "__main__"
-
-        # log.debug(f"{package}")
+        deps = tuple([dep for dep in deps_dict.values()])
+        package = type(self.name, deps, mac_dict)
         return package
 
 
@@ -154,7 +217,6 @@ class Macro:
     def build(self, env: Dict = dict()) -> Callable:
         """build the callable of macro"""
 
-        # if env:
         # putting default packages
         env = env | evl.DEFAULT_PACKAGES
 
@@ -192,17 +254,15 @@ class Macro:
             test_str = f"{self.name}"
 
         # log.debug(env)
-        if not env.get(self.name, False):
-            try:
-                test_env = env | {self.name: func}
-                evl.simple_eval(test_str, functions=test_env)
-                log.debug(f"Finished macro '{self.name}'")
-                return self
 
-            except ZeroDivisionError:
-                return self
-        else:
-            raise NameAlreadyUsedError(ref=self.name)
+        try:
+            test_env = env | {self.name: func}
+            evl.simple_eval(test_str, functions=test_env)
+            log.debug(f"Finished macro '{self.name}'")
+            return self
+
+        except ZeroDivisionError:
+            return self
 
     def is_valid_name(self) -> Macro:
         valid_pattern = r"^[_a-zA-Z*][_a-zA-Z0-9=]+"
@@ -284,7 +344,7 @@ def create_env_class(env_path: str) -> Environment:
                     except json.JSONDecodeError:
                         log.debug(f"Missing details on {file}")
 
-    env_class = Environment(_id="7", macros=macros, packages=packages)
+    env_class = Environment(_id="", macros=macros, packages=packages)
 
     return env_class
 
@@ -358,9 +418,11 @@ if __name__ == "__main__":
     cache_path = args[2]  # path to the cache files
     try:
         result = reload(env_path, cache_path)
+        log.debug("build time %s seconds" % (time.time() - start_time))
         sys.stdout.write(result)
 
     except Exception as e:
-        sys.stderr.write(str(e))
-
-    log.debug("build time %s seconds" % (time.time() - start_time))
+        if isinstance(e, SwirlError):
+            sys.stderr.write(str(e.message))
+        else:
+            sys.stderr.write(str(e))

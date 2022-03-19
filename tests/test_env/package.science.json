@@ -12,6 +12,14 @@
       "variables": ["mass", "acc"],
       "formula": "mass * acc",
       "description": "Just my another macro"
+    },
+    {
+      "_id": "",
+      "owner_id": "",
+      "name": "SlopeFormula",
+      "variables": [],
+      "formula": "9.8",
+      "description": "Just my another macro"
     }
   ],
   "dependencies": []

@@ -76,7 +76,7 @@ class RandomTest(unittest.TestCase):
         self.cache_path = "tests/cache"
 
     def test_swirl(self):
-        print(swirl("mk.best_girl", self.cache_path))
+        print(swirl("math.factorial(123)", self.cache_path))
 
 
 if __name__ == "__main__":
