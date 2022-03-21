@@ -1,8 +1,0 @@
-{
-  "_id": "",
-  "owner_id": "",
-  "name": "mk_test",
-  "variables": ["m", "b"],
-  "formula": "mk.grav_pot_esc_spd(mass=m, radius=b)",
-  "description": "Just my macro"
-}

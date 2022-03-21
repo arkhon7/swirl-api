@@ -62,6 +62,11 @@ class PackageTest(unittest.TestCase):
             swirl("mk.best_girl", self.cache_path),
         )
 
+        self.assertEqual(
+            swirl("mk.gravity", self.cache_path),
+            swirl("mk.gravity", self.cache_path),
+        )
+
     def test_science(self):
         self.assertEqual(
             swirl("science.force(5,5)", self.cache_path),
@@ -76,7 +81,7 @@ class RandomTest(unittest.TestCase):
         self.cache_path = "tests/cache"
 
     def test_swirl(self):
-        print(swirl("math.factorial(123)", self.cache_path))
+        print(swirl("force(acceleration=123, mass=53)", self.cache_path))
 
 
 if __name__ == "__main__":

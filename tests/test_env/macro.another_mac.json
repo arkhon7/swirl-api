@@ -1,8 +1,0 @@
-{
-  "_id": "",
-  "owner_id": "",
-  "name": "GravPotEscSpd",
-  "variables": ["r", "m"],
-  "formula": "mk.grav_pot_esc_spd(r, m) + 1",
-  "description": "Just my macro"
-}
