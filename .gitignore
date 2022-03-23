@@ -19,4 +19,6 @@ diagrams
 tests/__init__.py
 tests/cache
 tests/scratch.py
+tests/copies
 *.rar
+*.spec

@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import os
 import re
-import sys
 import json
-import time
 import dill as pickle
 import logging
 
@@ -14,7 +12,6 @@ from dacite import from_dict
 from dataclasses import asdict
 
 from pathlib import Path
-from errors import SwirlError
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -62,13 +59,6 @@ def load_package_data(data: Dict) -> Package:
     return from_dict(Package, data)
 
 
-"""
-reload()
-
-reloads the data supplied in the environment folder to update changes
-"""
-
-
 def resolve(env_path: str, cache_path: str) -> str:
     env_class = create_env_class(env_path)
 
@@ -114,20 +104,3 @@ RETURN:
 EXCEPTIONS:
 
 """
-
-if __name__ == "__main__":
-    start_time = time.time()
-
-    args = sys.argv
-    env_path = args[1]  # path to the env files
-    cache_path = args[2]  # path to the cache files
-    try:
-        result = resolve(env_path, cache_path)
-        log.debug("build time %s seconds" % (time.time() - start_time))
-        sys.stdout.write(result)
-
-    except Exception as e:
-        if isinstance(e, SwirlError):
-            sys.stderr.write(str(e.message))
-        else:
-            sys.stderr.write(str(e))

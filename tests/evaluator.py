@@ -5,7 +5,6 @@ import sys
 import warnings
 import random
 import math
-import time
 import logging
 
 
@@ -592,7 +591,7 @@ class CalculationDataNotFound(Exception):
     ...
 
 
-def swirl(expr: str, cache_path: str) -> Optional[str]:
+def evaluate(expr: str, cache_path: str) -> Optional[str]:
     swl_cache_file = cache_path + "/" + "swl.pkl"
     cache = Path(swl_cache_file)
 
@@ -606,20 +605,3 @@ def swirl(expr: str, cache_path: str) -> Optional[str]:
 
     else:
         raise CalculationDataNotFound("File 'swl.pkl' is missing! Please restart the app.")
-
-
-if __name__ == "__main__":
-    start_time = time.time()
-    args = sys.argv
-    expr = args[1]  # path to the env files
-    cache_path = args[2]  # path to the cache files
-
-    try:
-        result = swirl(expr, cache_path)
-        if result:
-            sys.stdout.write(str(result))
-
-    except Exception as e:
-        sys.stderr.write(str(e))
-
-    log.debug("build time %s seconds" % (time.time() - start_time))
